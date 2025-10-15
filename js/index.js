@@ -396,33 +396,49 @@ const trial_main_select = {
 };
 
 const trial_main_choose = {
-    type: jsPsychCanvasSliderResponse,
-    canvas_size: [440, 550],
-    stimulus: function(c){
-        drawChoices(c, initials, behavior_list);
-        drawPayout(c, payout_list);
-        drawChoiceRect(c, selected_behavior_pos);
-    },
-    min: 1,
-    max: 9,
-    step: 1,
-    require_movement: true,
-    slider_start: 5,
-    labels: ['Morally<br>wrong','Morally<br>right'],
-    prompt: "<p> How moral do you think the selected behavior is? </p>",
-    on_finish: function(data){
-        data.behaviors_shown = behavior_list,
-        data.selected_behavior = selected_behavior,
-        data.selected_behavior_pos = selected_behavior_pos,
-        data.payout_list = payout_list,
-        data.payout_condition = selected_payout,
-        data.payout_large = this_payout[0],
-        data.payout_small = this_payout[1]
-    },
-    data: {
-        category: "choice",
-    },
+  type: jsPsychHtmlSliderResponse,
+  stimulus: function(){
+    // render static image canvas as <img> by converting it to base64
+    const canvas = document.createElement('canvas');
+    canvas.width = 440;
+    canvas.height = 550;
+    drawChoices(canvas, initials, behavior_list);
+    drawPayout(canvas, payout_list);
+    drawChoiceRect(canvas, selected_behavior_pos);
+    const imgData = canvas.toDataURL();
+
+    return `
+      <div style="text-align:center;">
+        <img src="${imgData}" width="440" height="550">
+        <p>How moral do you think the selected behavior is?</p>
+        <input type="range" id="moral" min="1" max="9" step="1" value="5">
+        <div style="display:flex; justify-content:space-between;">
+          <span>Morally wrong</span><span>Morally right</span>
+        </div>
+        <br>
+        <p>How much would you like to punish the selected player?</p>
+        <input type="range" id="punish" min="1" max="9" step="1" value="5">
+        <div style="display:flex; justify-content:space-between;">
+          <span>Not at all</span><span>Very much</span>
+        </div>
+      </div>
+    `;
+  },
+  on_finish: function(data){
+    data.moral_rating = document.getElementById('moral').value;
+    data.punish_rating = document.getElementById('punish').value;
+    data.behaviors_shown = behavior_list;
+    data.selected_behavior = selected_behavior;
+    data.selected_behavior_pos = selected_behavior_pos;
+    data.payout_list = payout_list;
+    data.payout_condition = selected_payout;
+    data.payout_large = this_payout[0];
+    data.payout_small = this_payout[1];
+  },
+  data: { category: "choice" },
+  require_movement: true
 };
+
 
 var procedure_main = {
     timeline: [trial_main_fix, trial_main_behavior,
