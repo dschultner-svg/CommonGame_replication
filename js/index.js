@@ -264,7 +264,7 @@ timeline.push(instructions_initial);
 
 const understanding_quiz = {
   type: jsPsychSurveyMultiChoice,
-  preamble: "<div style='width:700px;'><p><b>Quick quiz!</b> What have you learned about the rules of the game you are about to observe?</p></div>",
+  preamble: "<div style='width:700px;'><p><b>Recap quiz</b> What have you learned about the rules of the game you are about to observe?</p></div>",
   questions: [
     {
       prompt: "Select which of these three options is correct:",
