@@ -395,64 +395,96 @@ const trial_main_select = {
     },
 };
 
-const trial_main_choose_moral = {
-  type: jsPsychCanvasSliderResponse,
-  canvas_size: [440, 550],
-  stimulus: function(c){
-    drawChoices(c, initials, behavior_list);
-    drawPayout(c, payout_list);
-    drawChoiceRect(c, selected_behavior_pos);
-  },
-  min: 1,
-  max: 9,
-  step: 1,
-  require_movement: true,
-  slider_start: 5,
-  labels: ['Morally<br>wrong','Morally<br>right'],
-  prompt: "<p>How moral do you think the selected behavior is?</p>",
-  on_finish: function(data){
-    data.behaviors_shown = behavior_list;
-    data.selected_behavior = selected_behavior;
-    data.selected_behavior_pos = selected_behavior_pos;
-    data.payout_list = payout_list;
-    data.payout_condition = selected_payout;
-    data.payout_large = this_payout[0];
-    data.payout_small = this_payout[1];
-  },
-  data: { category: "choice_moral" }
+const trial_main_choose = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: function(){
+        // Create canvas as base64 image to embed in HTML
+        const canvas = document.createElement('canvas');
+        canvas.width = 440;
+        canvas.height = 550;
+        const c = canvas.getContext('2d');
+        
+        drawChoices(canvas, initials, behavior_list);
+        drawPayout(canvas, payout_list);
+        drawChoiceRect(canvas, selected_behavior_pos);
+        
+        const canvasDataURL = canvas.toDataURL();
+        
+        return `
+            <div style="text-align: center;">
+                <img src="${canvasDataURL}" style="display: block; margin: 0 auto 20px auto;">
+                
+                <div style="width: 440px; margin: 0 auto; text-align: left;">
+                    <p style="margin-bottom: 10px;"><strong>How moral do you think the selected behavior is?</strong></p>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px;">
+                        <span>Morally wrong</span>
+                        <span>Morally right</span>
+                    </div>
+                    <input type="range" id="morality-slider" min="1" max="9" step="1" value="5" 
+                           style="width: 100%; margin-bottom: 30px;">
+                    
+                    <p style="margin-bottom: 10px;"><strong>How much would you like to punish this player?</strong></p>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px;">
+                        <span>Not at all</span>
+                        <span>Very much</span>
+                    </div>
+                    <input type="range" id="punishment-slider" min="1" max="9" step="1" value="5" 
+                           style="width: 100%;">
+                </div>
+            </div>
+        `;
+    },
+    choices: ['Continue'],
+    button_html: '<button class="jspsych-btn" style="margin-top: 20px;">%choice%</button>',
+    on_load: function(){
+        // Disable continue button until both sliders are moved
+        const btn = document.querySelector('.jspsych-btn');
+        const moralitySlider = document.getElementById('morality-slider');
+        const punishmentSlider = document.getElementById('punishment-slider');
+        
+        let moralityMoved = false;
+        let punishmentMoved = false;
+        
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        
+        moralitySlider.addEventListener('input', function(){
+            moralityMoved = true;
+            if (moralityMoved && punishmentMoved) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }
+        });
+        
+        punishmentSlider.addEventListener('input', function(){
+            punishmentMoved = true;
+            if (moralityMoved && punishmentMoved) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }
+        });
+    },
+    on_finish: function(data){
+        data.morality_response = parseInt(document.getElementById('morality-slider').value);
+        data.punishment_response = parseInt(document.getElementById('punishment-slider').value);
+        data.behaviors_shown = behavior_list;
+        data.selected_behavior = selected_behavior;
+        data.selected_behavior_pos = selected_behavior_pos;
+        data.payout_list = payout_list;
+        data.payout_condition = selected_payout;
+        data.payout_large = this_payout[0];
+        data.payout_small = this_payout[1];
+    },
+    data: {
+        category: "choice",
+    },
 };
-
-const trial_main_choose_punish = {
-  type: jsPsychCanvasSliderResponse,
-  canvas_size: [440, 550],
-  stimulus: function(c){
-    drawChoices(c, initials, behavior_list);
-    drawPayout(c, payout_list);
-    drawChoiceRect(c, selected_behavior_pos);
-  },
-  min: 1,
-  max: 9,
-  step: 1,
-  require_movement: true,
-  slider_start: 5,
-  labels: ['Not at all','Very much'],
-  prompt: "<p>How much would you like to punish the selected player for their behavior?</p>",
-  data: { category: "choice_punish" }
-};
-
 
 var procedure_main = {
-  timeline: [
-    trial_main_fix, 
-    trial_main_behavior,
-    trial_main_payout,
-    trial_main_select,
-    trial_main_choose_moral,
-    trial_main_choose_punish
-  ],
-  repetitions: 1
+    timeline: [trial_main_fix, trial_main_behavior,
+     trial_main_payout, trial_main_select, trial_main_choose],
+    repetitions: n_trials
 };
-
 timeline.push(procedure_main);
 
 // extra questions at the end
